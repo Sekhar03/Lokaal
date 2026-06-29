@@ -11,6 +11,8 @@ const GroupsDirectory = lazy(() => import('./pages/Groups/GroupsDirectory'));
 const SocietyDashboard = lazy(() => import('./pages/Society/SocietyDashboard'));
 const Marketplace = lazy(() => import('./pages/Market/Marketplace'));
 const BusinessDirectory = lazy(() => import('./pages/Business/BusinessDirectory'));
+const LokaalAdminPage = lazy(() => import('./pages/Admin/LokaalAdminPage'));
+const AdminLogin = lazy(() => import('./pages/Onboarding/AdminLogin'));
 
 function Loading() {
   return (
@@ -57,6 +59,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
+  const user = useAuthStore(s => s.user);
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
   
@@ -82,6 +85,7 @@ export default function App() {
                   { path: '/groups', label: 'Groups' },
                   { path: '/society', label: 'Society' },
                   { path: '/more', label: 'More' },
+                  ...(user?.role === 'PLATFORM_ADMIN' ? [{ path: '/admin', label: 'Admin' }] : [])
                 ].map(nav => (
                   <Link 
                     key={nav.path} 
@@ -105,6 +109,7 @@ export default function App() {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/login" element={isAuthenticated ? <Navigate to="/feed" replace /> : <PhoneAuth />} />
+              <Route path="/admin-login" element={isAuthenticated ? <Navigate to="/admin" replace /> : <AdminLogin />} />
               
               <Route path="/" element={<Navigate to="/feed" replace />} />
               <Route path="/feed" element={<PrivateRoute><FeedPage /></PrivateRoute>} />
@@ -114,6 +119,7 @@ export default function App() {
               <Route path="/market" element={<PrivateRoute><Marketplace /></PrivateRoute>} />
               <Route path="/more" element={<PrivateRoute><Marketplace /></PrivateRoute>} />
               <Route path="/business" element={<PrivateRoute><BusinessDirectory /></PrivateRoute>} />
+              <Route path="/admin" element={<PrivateRoute><LokaalAdminPage /></PrivateRoute>} />
             </Routes>
           </Suspense>
         </main>

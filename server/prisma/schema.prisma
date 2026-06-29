@@ -101,6 +101,7 @@ model User {
   fcmToken        String?
   preferredLang   String    @default("en")
   verificationDoc String?
+  isVerified      Boolean   @default(false)
   createdAt       DateTime  @default(now())
 
   society       Society?  @relation(fields: [societyId], references: [id])

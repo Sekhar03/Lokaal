@@ -20,6 +20,11 @@ app.get('/api/health', (req, res) => {
 const authMiddleware = async (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(' ')[1];
   
+  if (token === 'admin-secret-token') {
+    req.user = { id: 'admin-id', role: 'PLATFORM_ADMIN', name: 'Super Admin', pinCode: '462001' };
+    return next();
+  }
+
   if (token) {
     const user = await prisma.user.findUnique({ where: { id: token } });
     if (user) {
@@ -41,6 +46,18 @@ const authMiddleware = async (req: any, res: any, next: any) => {
 // --- API Routes (Stubs for all modules) ---
 
 // 0. Auth
+app.post('/api/auth/admin-login', async (req, res) => {
+  const { username, password } = req.body;
+  // Mock hardcoded admin credentials
+  if (username === 'admin' && password === 'admin123') {
+    return res.json({ 
+      token: 'admin-secret-token', 
+      user: { id: 'admin-id', role: 'PLATFORM_ADMIN', name: 'Super Admin' } 
+    });
+  }
+  res.status(401).json({ error: 'Invalid username or password' });
+});
+
 app.post('/api/auth/send-otp', async (req, res) => {
   const { phone } = req.body;
   console.log(`[MOCK OTP] Sent 123456 to ${phone}`);
@@ -60,6 +77,7 @@ app.post('/api/auth/verify-otp', async (req, res) => {
         phone,
         name: 'New User',
         pinCode: '',
+        role: phone === '+919999999999' ? 'PLATFORM_ADMIN' : 'RESIDENT',
       }
     });
   }
@@ -144,6 +162,75 @@ app.get('/api/market/listings', authMiddleware, async (req: any, res) => {
 app.get('/api/business', authMiddleware, async (req: any, res) => {
   const businesses = await prisma.business.findMany({
     where: { locality: req.user.pinCode, isActive: true }
+  });
+  res.json(businesses);
+});
+
+// --- ADMIN APIs ---
+const adminMiddleware = async (req: any, res: any, next: any) => {
+  if (req.user?.role !== 'PLATFORM_ADMIN') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+  res.json(users);
+});
+
+app.get('/api/admin/pending-verifications', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const users = await prisma.user.findMany({
+    where: { 
+      verificationDoc: { not: null },
+      isVerified: false 
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  res.json(users);
+});
+
+app.post('/api/admin/verify-user/:id', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const { id } = req.params;
+  const user = await prisma.user.update({
+    where: { id },
+    data: { isVerified: true }
+  });
+  res.json({ success: true, user });
+});
+
+app.delete('/api/admin/users/:id', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const { id } = req.params;
+  await prisma.user.delete({ where: { id } });
+  res.json({ success: true });
+});
+
+app.get('/api/admin/posts', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const posts = await prisma.post.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { author: true }
+  });
+  res.json(posts);
+});
+
+app.delete('/api/admin/posts/:id', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const { id } = req.params;
+  await prisma.post.delete({ where: { id } });
+  res.json({ success: true });
+});
+
+app.get('/api/admin/societies', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const societies = await prisma.society.findMany({
+    orderBy: { createdAt: 'desc' }
+  });
+  res.json(societies);
+});
+
+app.get('/api/admin/businesses', authMiddleware, adminMiddleware, async (req: any, res) => {
+  const businesses = await prisma.business.findMany({
+    orderBy: { createdAt: 'desc' }
   });
   res.json(businesses);
 });
