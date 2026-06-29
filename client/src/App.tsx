@@ -65,6 +65,55 @@ export default function App() {
   
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  
+  // Profile dropdown and settings states
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editFlat, setEditFlat] = useState('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  const openSettings = () => {
+    setEditName(user?.name || '');
+    setEditFlat(user?.flatNumber || '');
+    setIsSettingsOpen(true);
+    setIsProfileMenuOpen(false);
+  };
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingSettings(true);
+    try {
+      const token = localStorage.getItem('lokaal_token');
+      const res = await fetch('http://localhost:3001/api/auth/profile', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name: editName, role: user?.role, flatNumber: editFlat })
+      });
+      const data = await res.json();
+      if (data.success) {
+        useAuthStore.getState().login(token, data.user);
+        setIsSettingsOpen(false);
+      } else {
+        alert('Failed to save settings');
+      }
+    } catch (err) {
+      console.warn('API failed, saving settings locally in mock mode:', err);
+      const mockUser = {
+        ...user,
+        name: editName,
+        flatNumber: editFlat
+      };
+      localStorage.setItem('mock_user', JSON.stringify(mockUser));
+      useAuthStore.getState().login(localStorage.getItem('lokaal_token'), mockUser);
+      setIsSettingsOpen(false);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   return (
     <div className="w-full min-h-screen bg-slate-50 pb-[70px] md:pb-0 relative overflow-x-hidden">
@@ -97,9 +146,44 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Profile/Logout */}
-              <div className="h-9 w-9 bg-orange-50 text-orange-600 rounded-full cursor-pointer hover:bg-orange-100 hover:scale-105 transition-all flex items-center justify-center font-bold text-sm border-2 border-orange-100 shadow-sm" onClick={() => useAuthStore.getState().logout()}>
-                TR
+              {/* Profile/Settings/Logout */}
+              <div className="relative">
+                <div 
+                  className="h-9 w-9 bg-orange-50 text-orange-600 rounded-full cursor-pointer hover:bg-orange-100 hover:scale-105 transition-all flex items-center justify-center font-bold text-sm border-2 border-orange-100 shadow-sm" 
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                >
+                  {(user?.name || 'US').substring(0, 2).toUpperCase()}
+                </div>
+
+                {isProfileMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-bold text-[#1A1A2E] truncate">{user?.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.phone}</p>
+                        <span className="inline-block bg-orange-50 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded mt-1">{user?.role}</span>
+                      </div>
+                      
+                      <button 
+                        onClick={openSettings}
+                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-semibold"
+                      >
+                        ⚙️ Settings
+                      </button>
+                      
+                      <button 
+                        onClick={() => {
+                          setIsProfileMenuOpen(false);
+                          useAuthStore.getState().logout();
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-semibold border-t border-gray-100"
+                      >
+                        🚪 Logout
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </header>
@@ -168,6 +252,56 @@ export default function App() {
         
         {/* Render Creation Modals */}
         <CreateActionModals activeModal={activeModal} onClose={() => setActiveModal(null)} />
+
+        {/* Render Settings Modal */}
+        {isSettingsOpen && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-gray-100 animate-in zoom-in-95 duration-150">
+              <h3 className="text-xl font-bold text-[#1A1A2E] mb-4">Edit Profile Settings</h3>
+              
+              <form onSubmit={handleSaveSettings} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg outline-none focus:border-orange-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Flat / House Number</label>
+                  <input 
+                    type="text" 
+                    value={editFlat}
+                    onChange={(e) => setEditFlat(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg outline-none focus:border-orange-500"
+                    placeholder="e.g. Block C, Flat 304"
+                  />
+                </div>
+                
+                <div className="flex gap-3 justify-end pt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsSettingsOpen(false)}
+                    className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSavingSettings}
+                    className="px-4 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {isSavingSettings ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
   );
 }
