@@ -11,7 +11,7 @@ const GroupsDirectory = lazy(() => import('./pages/Groups/GroupsDirectory'));
 const SocietyDashboard = lazy(() => import('./pages/Society/SocietyDashboard'));
 const Marketplace = lazy(() => import('./pages/Market/Marketplace'));
 const BusinessDirectory = lazy(() => import('./pages/Business/BusinessDirectory'));
-const LokaalAdminPage = lazy(() => import('./pages/Admin/LokaalAdminPage'));
+const LokaalAdminPage = lazy(() => import('./pages/admin/LokaalAdminPage'));
 const AdminLogin = lazy(() => import('./pages/Onboarding/AdminLogin'));
 
 function Loading() {
