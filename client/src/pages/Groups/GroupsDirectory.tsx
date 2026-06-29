@@ -24,7 +24,16 @@ export default function GroupsDirectory() {
         setUsers(Array.isArray(usersData) ? usersData : []);
         setSocieties(Array.isArray(societiesData) ? societiesData : []);
       } catch (err) {
-        console.error('Failed to fetch directory data:', err);
+        console.warn('Failed to fetch directory data, falling back to mock directory data:', err);
+        setUsers([
+          { id: 'mock-u-1', name: 'Karan Sharma', role: 'BUSINESS_OWNER', pinCode: '462001' },
+          { id: 'mock-u-2', name: 'Sunita Rao', role: 'SOCIETY_ADMIN', pinCode: '462001' },
+          { id: 'mock-u-3', name: 'Ravi Kumar', role: 'RESIDENT', pinCode: '462001' }
+        ]);
+        setSocieties([
+          { id: 'mock-s-1', name: 'Gokuldham Cooperative Society', pinCode: '462001', address: 'Powai, Mumbai' },
+          { id: 'mock-s-2', name: 'Greenwood Apartments', pinCode: '462001', address: 'Arera Colony, Bhopal' }
+        ]);
       } finally {
         setIsLoading(false);
       }
