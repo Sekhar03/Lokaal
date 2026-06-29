@@ -13,6 +13,7 @@ const Marketplace = lazy(() => import('./pages/Market/Marketplace'));
 const BusinessDirectory = lazy(() => import('./pages/Business/BusinessDirectory'));
 const LokaalAdminPage = lazy(() => import('./pages/admin/LokaalAdminPage'));
 const AdminLogin = lazy(() => import('./pages/Onboarding/AdminLogin'));
+const DigiLockerCallback = lazy(() => import('./pages/Onboarding/DigiLockerCallback'));
 
 function Loading() {
   return (
@@ -196,6 +197,7 @@ export default function App() {
             <Routes>
               <Route path="/login" element={isAuthenticated ? <Navigate to="/feed" replace /> : <PhoneAuth />} />
               <Route path="/admin-login" element={isAuthenticated ? <Navigate to="/admin" replace /> : <AdminLogin />} />
+              <Route path="/digilocker-callback" element={<DigiLockerCallback />} />
               
               <Route path="/" element={<Navigate to="/feed" replace />} />
               <Route path="/feed" element={<PrivateRoute><FeedPage /></PrivateRoute>} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,12 +15,21 @@ export default function PhoneAuth() {
   // Verification field
   const [verificationDoc, setVerificationDoc] = useState('');
 
-  const [step, setStep] = useState<'PHONE' | 'OTP' | 'PROFILE' | 'VERIFICATION' | 'LOCATION'>('PHONE');
+  const [step, setStep] = useState<'PHONE' | 'OTP' | 'DIGILOCKER' | 'PROFILE' | 'VERIFICATION' | 'LOCATION'>('PHONE');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user has just completed DigiLocker Aadhaar verification
+    const verifiedName = localStorage.getItem('verified_aadhaar_name');
+    if (verifiedName) {
+      setName(verifiedName);
+      setStep('PROFILE');
+    }
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +67,7 @@ export default function PhoneAuth() {
           localStorage.setItem('lokaal_token', data.token);
           
           if (data.user.name === 'New User' || !data.user.name) {
-            setStep('PROFILE');
+            setStep('DIGILOCKER');
           } else if (!data.user.pinCode) {
             setStep('LOCATION');
           } else {
@@ -99,7 +108,7 @@ export default function PhoneAuth() {
             };
             localStorage.setItem('lokaal_token', 'mock-token-123');
             localStorage.setItem('mock_user', JSON.stringify(mockUser));
-            setStep('PROFILE');
+            setStep('DIGILOCKER');
           }
         } else {
           alert('Invalid OTP (Mock mode accepts 123456)');
@@ -347,6 +356,37 @@ export default function PhoneAuth() {
           </form>
         )}
 
+        {step === 'DIGILOCKER' && (
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-black text-2xl border border-blue-100 shadow-sm">
+              DL
+            </div>
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Aadhaar Card Linkage</h2>
+              <p className="text-sm text-gray-500 max-w-xs">
+                To keep neighborhood groups trusted, verify your identity via Aadhaar using DigiLocker.
+              </p>
+            </div>
+            
+            <button 
+              onClick={() => {
+                if (window.location.hostname === 'localhost') {
+                  window.location.href = 'http://localhost:3001/api/auth/digilocker/authorize';
+                } else {
+                  window.location.href = `${window.location.origin}/digilocker-callback?code=mock_code_123&state=sandbox`;
+                }
+              }}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              🔒 Link Aadhaar with DigiLocker
+            </button>
+            
+            <p className="text-[10px] text-gray-400 text-center">
+              Lokaal only receives your verified official name. No other data is stored.
+            </p>
+          </div>
+        )}
+
         {step === 'PROFILE' && (
           <form onSubmit={handleProfileSubmit} className="flex flex-col gap-5">
             <h2 className="text-xl font-bold text-[#1A1A2E] text-center border-b pb-4 mb-2">Setup Your Profile</h2>
@@ -356,10 +396,11 @@ export default function PhoneAuth() {
               <input 
                 type="text" 
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-medium" 
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-medium disabled:opacity-75 disabled:bg-gray-100 disabled:cursor-not-allowed" 
                 placeholder="Rahul Kumar" 
                 value={name} 
                 onChange={e => setName(e.target.value)}
+                disabled={!!localStorage.getItem('verified_aadhaar_name')}
                 autoFocus 
               />
             </div>

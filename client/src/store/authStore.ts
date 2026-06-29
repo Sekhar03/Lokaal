@@ -30,6 +30,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem('lokaal_token');
     localStorage.removeItem('mock_user');
+    localStorage.removeItem('verified_aadhaar_name');
     set({ isAuthenticated: false, user: null });
   },
 }));
