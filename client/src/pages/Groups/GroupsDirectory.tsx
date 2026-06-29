@@ -7,6 +7,7 @@ export default function GroupsDirectory() {
   const [users, setUsers] = useState<any[]>([]);
   const [societies, setSocieties] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [joinedSocietyIds, setJoinedSocietyIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +44,17 @@ export default function GroupsDirectory() {
     
     fetchData();
   }, []);
+
+  const handleJoinSociety = (id: string, name: string) => {
+    const isJoined = joinedSocietyIds.includes(id);
+    if (isJoined) {
+      setJoinedSocietyIds(joinedSocietyIds.filter(sid => sid !== id));
+      alert(`Left ${name}`);
+    } else {
+      setJoinedSocietyIds([...joinedSocietyIds, id]);
+      alert(`Welcome to ${name}! You are now a verified resident member.`);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 pb-24 md:pb-8">
@@ -82,7 +94,10 @@ export default function GroupsDirectory() {
                     <span className="text-[10px] font-bold text-orange-600/80 uppercase tracking-widest mb-1.5">Pincode: {user.pinCode}</span>
                     <h3 className="font-bold text-slate-900 text-[16px] leading-tight mb-2">{user.name}</h3>
                     <p className="text-sm text-slate-500">{user.role}</p>
-                    <button className="w-full py-2.5 mt-4 rounded-xl text-[13px] font-bold bg-slate-900 text-white hover:bg-orange-600 shadow-md transition-all">
+                    <button 
+                      onClick={() => alert(`Member Profile\nName: ${user.name}\nRole: ${user.role}\nPincode Area: ${user.pinCode}`)}
+                      className="w-full py-2.5 mt-4 rounded-xl text-[13px] font-bold bg-slate-900 text-white hover:bg-orange-600 shadow-md transition-all active:scale-[0.98]"
+                    >
                       View Profile
                     </button>
                   </div>
@@ -90,19 +105,25 @@ export default function GroupsDirectory() {
                   <div className="col-span-full text-center py-10 text-slate-500 font-medium">No users found in your pincode area.</div>
                 )
               ) : (
-                societies.length > 0 ? societies.map((society, i) => (
-                  <div key={i} className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col items-center text-center transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-3xl shadow-lg mb-4 text-white">
-                      🏢
+                societies.length > 0 ? societies.map((society, i) => {
+                  const isJoined = joinedSocietyIds.includes(society.id);
+                  return (
+                    <div key={society.id} className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 flex flex-col items-center text-center transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1">
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-3xl shadow-lg mb-4 text-white">
+                        🏢
+                      </div>
+                      <span className="text-[10px] font-bold text-orange-600/80 uppercase tracking-widest mb-1.5">Pincode: {society.pinCode}</span>
+                      <h3 className="font-bold text-slate-900 text-[16px] leading-tight mb-2">{society.name}</h3>
+                      <p className="text-sm text-slate-500 line-clamp-2">{society.address}</p>
+                      <button 
+                        onClick={() => handleJoinSociety(society.id, society.name)}
+                        className={`w-full py-2.5 mt-4 rounded-xl text-[13px] font-bold shadow-md transition-all active:scale-[0.98] ${isJoined ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-slate-900 text-white hover:bg-orange-600'}`}
+                      >
+                        {isJoined ? 'Joined ✓' : 'Join Society'}
+                      </button>
                     </div>
-                    <span className="text-[10px] font-bold text-orange-600/80 uppercase tracking-widest mb-1.5">Pincode: {society.pinCode}</span>
-                    <h3 className="font-bold text-slate-900 text-[16px] leading-tight mb-2">{society.name}</h3>
-                    <p className="text-sm text-slate-500 line-clamp-2">{society.address}</p>
-                    <button className="w-full py-2.5 mt-4 rounded-xl text-[13px] font-bold bg-slate-900 text-white hover:bg-orange-600 shadow-md transition-all">
-                      Join Society
-                    </button>
-                  </div>
-                )) : (
+                  );
+                }) : (
                   <div className="col-span-full text-center py-10 text-slate-500 font-medium">No societies found in your pincode area.</div>
                 )
               )}
