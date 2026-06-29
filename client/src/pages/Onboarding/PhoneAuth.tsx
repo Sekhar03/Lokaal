@@ -71,16 +71,36 @@ export default function PhoneAuth() {
       } catch (err) {
         console.warn('API failed, falling back to mock OTP verification:', err);
         if (otp === '123456') {
-          const mockUser = {
-            id: 'mock-user-123',
-            phone: '+91' + phone,
-            name: 'New User',
-            pinCode: '',
-            role: phone === '9999999999' ? 'PLATFORM_ADMIN' : 'RESIDENT'
-          };
-          localStorage.setItem('lokaal_token', 'mock-token-123');
-          localStorage.setItem('mock_user', JSON.stringify(mockUser));
-          setStep('PROFILE');
+          if (authMode === 'signin') {
+            const savedUserStr = localStorage.getItem('mock_user');
+            let mockUser;
+            if (savedUserStr) {
+              mockUser = JSON.parse(savedUserStr);
+            } else {
+              mockUser = {
+                id: 'mock-user-123',
+                phone: '+91' + phone,
+                name: phone === '9999999999' ? 'Super Admin' : 'John Doe',
+                role: phone === '9999999999' ? 'PLATFORM_ADMIN' : 'RESIDENT',
+                pinCode: '462001'
+              };
+              localStorage.setItem('mock_user', JSON.stringify(mockUser));
+            }
+            localStorage.setItem('lokaal_token', 'mock-token-123');
+            login(mockUser);
+            navigate('/feed');
+          } else {
+            const mockUser = {
+              id: 'mock-user-123',
+              phone: '+91' + phone,
+              name: 'New User',
+              pinCode: '',
+              role: phone === '9999999999' ? 'PLATFORM_ADMIN' : 'RESIDENT'
+            };
+            localStorage.setItem('lokaal_token', 'mock-token-123');
+            localStorage.setItem('mock_user', JSON.stringify(mockUser));
+            setStep('PROFILE');
+          }
         } else {
           alert('Invalid OTP (Mock mode accepts 123456)');
         }
