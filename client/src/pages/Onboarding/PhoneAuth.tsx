@@ -62,7 +62,7 @@ export default function PhoneAuth() {
           } else if (!data.user.pinCode) {
             setStep('LOCATION');
           } else {
-            login(data.user);
+            login(data.token, data.user);
             navigate('/feed');
           }
         } else {
@@ -87,7 +87,7 @@ export default function PhoneAuth() {
               localStorage.setItem('mock_user', JSON.stringify(mockUser));
             }
             localStorage.setItem('lokaal_token', 'mock-token-123');
-            login(mockUser);
+            login('mock-token-123', mockUser);
             navigate('/feed');
           } else {
             const mockUser = {
@@ -222,7 +222,7 @@ export default function PhoneAuth() {
           
           const updateData = await updateRes.json();
           if (updateData.success) {
-            login(updateData.user);
+            login(token || 'mock-token-123', updateData.user);
             navigate('/feed');
           }
         } catch (err) {
@@ -240,7 +240,7 @@ export default function PhoneAuth() {
             finalUser = { ...parsedUser, pinCode: detectedPinCode };
           }
           localStorage.setItem('mock_user', JSON.stringify(finalUser));
-          login(finalUser);
+          login('mock-token-123', finalUser);
           navigate('/feed');
         }
       } catch (err) {
@@ -265,7 +265,7 @@ export default function PhoneAuth() {
         finalUser = { ...parsedUser, pinCode: detectedPinCode };
       }
       localStorage.setItem('mock_user', JSON.stringify(finalUser));
-      login(finalUser);
+      login('mock-token-123', finalUser);
       navigate('/feed');
       setIsLoading(false);
     });
