@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { encryptMessage, decryptMessage } from '../../utils/crypto';
 
 type Message = {
   sender: 'user' | 'seller';
-  text: string;
+  text: string; // Stores the encrypted ciphertext string
   time: string;
 };
 
@@ -18,7 +19,7 @@ type Item = {
 export default function Marketplace() {
   const [activeCategory, setActiveCategory] = useState('All');
   
-  // Chat state
+  // Chat states
   const [chattingItem, setChattingItem] = useState<Item | null>(null);
   const [chatMessages, setChatMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -34,28 +35,38 @@ export default function Marketplace() {
 
   const categories = ['All', 'Electronics', 'Furniture', 'Books', 'Vehicles', 'Services', 'Clothing'];
 
-  const startChat = (item: Item) => {
+  const startChat = async (item: Item) => {
     setChattingItem(item);
+    // Encrypt the welcome message before setting in state
+    const encryptedWelcome = await encryptMessage(
+      `Hi! Thanks for showing interest in "${item.title}". It is still available.`
+    );
     setChatMessages([
-      { sender: 'seller', text: `Hi! Thanks for showing interest in "${item.title}". It is still available.`, time: 'Now' }
+      { sender: 'seller', text: encryptedWelcome, time: 'Now' }
     ]);
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const userMsg: Message = { sender: 'user', text: inputText, time: 'Now' };
+    // 1. Encrypt user message
+    const encryptedText = await encryptMessage(inputText);
+    const userMsg: Message = { sender: 'user', text: encryptedText, time: 'Now' };
     setChatMessages(prev => [...prev, userMsg]);
     setInputText('');
 
-    // Trigger mock automatic seller response
+    // 2. Trigger mock automatic seller response
     setIsTyping(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsTyping(false);
+      // Encrypt seller response
+      const encryptedResponse = await encryptMessage(
+        `Sure! I live in Greenwood Apartments (Block B, Flat 402). You can drop by tomorrow evening to inspect the item. Let me know if that works!`
+      );
       const sellerMsg: Message = { 
         sender: 'seller', 
-        text: `Sure! I live in Greenwood Apartments (Block B, Flat 402). You can drop by tomorrow evening to inspect the item. Let me know if that works!`, 
+        text: encryptedResponse, 
         time: 'Just now' 
       };
       setChatMessages(prev => [...prev, sellerMsg]);
@@ -66,7 +77,7 @@ export default function Marketplace() {
     <div className="flex flex-col min-h-screen bg-slate-50 pb-24 md:pb-8 relative">
       <div className="max-w-7xl mx-auto w-full">
         {/* Header */}
-        <div className="bg-white/90 backdrop-blur-md px-5 pt-6 pb-4 border-b border-slate-100 sticky top-[68px] z-45 shadow-sm md:rounded-b-3xl md:mx-4 md:mt-0 md:px-8 md:py-6">
+        <div className="bg-white/90 backdrop-blur-md px-5 pt-6 pb-4 border-b border-slate-100 sticky top-[68px] z-40 shadow-sm md:rounded-b-3xl md:mx-4 md:mt-0 md:px-8 md:py-6">
           <div className="flex justify-between items-center mb-5 md:mb-6">
             <h1 className="text-2xl md:text-3xl font-black text-slate-900">Local <span className="bg-gradient-to-r from-orange-600 to-amber-500 bg-clip-text text-transparent">Classifieds</span></h1>
             <button className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors shadow-inner border border-slate-100">
@@ -149,19 +160,7 @@ export default function Marketplace() {
             {/* Message Thread */}
             <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3.5 mb-4 max-h-64 min-h-[200px]">
               {chatMessages.map((msg, idx) => (
-                <div 
-                  key={idx} 
-                  className={`flex flex-col max-w-[75%] rounded-2xl px-4 py-2.5 text-xs ${
-                    msg.sender === 'user' 
-                      ? 'bg-orange-600 text-white self-end rounded-tr-none' 
-                      : 'bg-slate-100 text-slate-800 self-start rounded-tl-none'
-                  }`}
-                >
-                  <p className="leading-relaxed">{msg.text}</p>
-                  <span className={`text-[8px] mt-1 self-end ${msg.sender === 'user' ? 'text-white/60' : 'text-slate-400'}`}>
-                    {msg.time}
-                  </span>
-                </div>
+                <MessageBubble key={idx} msg={msg} />
               ))}
               
               {isTyping && (
@@ -193,6 +192,45 @@ export default function Marketplace() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MessageBubble({ msg }: { msg: Message }) {
+  const [decryptedText, setDecryptedText] = useState('Decrypting...');
+
+  useEffect(() => {
+    let isMounted = true;
+    decryptMessage(msg.text).then(plainText => {
+      if (isMounted) setDecryptedText(plainText);
+    });
+    return () => { isMounted = false; };
+  }, [msg.text]);
+
+  const isUser = msg.sender === 'user';
+
+  return (
+    <div className={`flex flex-col max-w-[85%] rounded-2xl px-4 py-3 text-xs ${
+      isUser 
+        ? 'bg-orange-600 text-white self-end rounded-tr-none shadow-sm shadow-orange-500/10' 
+        : 'bg-slate-100 text-slate-800 self-start rounded-tl-none border border-slate-200'
+    }`}>
+      {/* Visual representation of ciphertext */}
+      <p className="font-mono text-[9px] opacity-60 break-all mb-1 bg-black/5 p-1 rounded leading-none">
+        Cipher: {msg.text.slice(0, 24)}...
+      </p>
+
+      {/* Decrypted plaintext */}
+      <p className="leading-relaxed font-semibold">{decryptedText}</p>
+
+      <div className={`flex justify-between items-center mt-2 pt-1 border-t text-[9px] opacity-75 ${
+        isUser ? 'border-white/10' : 'border-slate-200'
+      }`}>
+        <span className="flex items-center gap-0.5 text-emerald-600 font-bold">
+          🔒 AES-GCM-256
+        </span>
+        <span>{msg.time}</span>
+      </div>
     </div>
   );
 }
