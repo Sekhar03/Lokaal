@@ -16,6 +16,7 @@ export default function PhoneAuth() {
   const [verificationDoc, setVerificationDoc] = useState('');
 
   const [step, setStep] = useState<'PHONE' | 'OTP' | 'PROFILE' | 'VERIFICATION' | 'LOCATION'>('PHONE');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   
   const login = useAuthStore((s) => s.login);
@@ -257,28 +258,50 @@ export default function PhoneAuth() {
         <p className="text-gray-500 mb-8 text-center text-sm">Your Neighbourhood in Your Pocket</p>
 
         {step === 'PHONE' && (
-          <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
-            <label className="text-sm font-semibold text-gray-700">Enter Mobile Number</label>
-            <div className="flex bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-              <span className="px-4 py-3 bg-gray-100 text-gray-500 font-medium border-r border-gray-200">+91</span>
-              <input 
-                type="tel" 
-                maxLength={10} 
-                className="w-full px-4 py-3 bg-transparent outline-none font-medium" 
-                placeholder="98765 43210" 
-                value={phone} 
-                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-                autoFocus 
-              />
+          <div className="flex flex-col gap-4">
+            {/* Tabs for Sign In vs Sign Up */}
+            <div className="flex bg-gray-100/80 p-1 rounded-xl mb-4 border border-slate-100 shadow-inner">
+              <button 
+                type="button"
+                onClick={() => setAuthMode('signin')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authMode === 'signin' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Sign In
+              </button>
+              <button 
+                type="button"
+                onClick={() => setAuthMode('signup')}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${authMode === 'signup' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Sign Up
+              </button>
             </div>
-            <button 
-              type="submit" 
-              disabled={phone.length !== 10 || isLoading}
-              className="w-full py-3 mt-4 bg-[#E85D2B] text-white font-bold rounded-lg disabled:opacity-50 hover:bg-orange-600 transition-colors"
-            >
-              {isLoading ? 'Sending...' : 'Send OTP'}
-            </button>
-          </form>
+
+            <form onSubmit={handleSendOtp} className="flex flex-col gap-4">
+              <label className="text-sm font-semibold text-gray-700">
+                {authMode === 'signin' ? 'Sign In with Mobile Number' : 'Sign Up with Mobile Number'}
+              </label>
+              <div className="flex bg-gray-50 border border-gray-200 rounded-lg overflow-hidden focus-within:border-orange-400 transition-colors">
+                <span className="px-4 py-3 bg-gray-100 text-gray-500 font-medium border-r border-gray-200">+91</span>
+                <input 
+                  type="tel" 
+                  maxLength={10} 
+                  className="w-full px-4 py-3 bg-transparent outline-none font-medium" 
+                  placeholder="98765 43210" 
+                  value={phone} 
+                  onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                  autoFocus 
+                />
+              </div>
+              <button 
+                type="submit" 
+                disabled={phone.length !== 10 || isLoading}
+                className="w-full py-3 mt-4 bg-[#E85D2B] text-white font-bold rounded-lg disabled:opacity-50 hover:bg-orange-600 transition-colors shadow-sm shadow-orange-500/20"
+              >
+                {isLoading ? 'Sending...' : authMode === 'signin' ? 'Sign In' : 'Sign Up'}
+              </button>
+            </form>
+          </div>
         )}
 
         {step === 'OTP' && (
