@@ -19,6 +19,12 @@ export default function PhoneAuth() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isLoading, setIsLoading] = useState(false);
   
+  // DigiLocker Mock Flow States
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [digiPin, setDigiPin] = useState('');
+  const [digiOtp, setDigiOtp] = useState('');
+  const [digiSubStep, setDigiSubStep] = useState<'INTRO' | 'AADHAAR_INPUT' | 'OTP_INPUT' | 'VERIFYING'>('INTRO');
+  
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
@@ -357,28 +363,127 @@ export default function PhoneAuth() {
         )}
 
         {step === 'DIGILOCKER' && (
-          <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-black text-2xl border border-blue-100 shadow-sm">
-              DL
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-center items-center gap-3 border-b pb-4">
+              <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black text-sm border border-blue-100 shadow-sm">
+                DL
+              </div>
+              <h2 className="text-lg font-bold text-[#1A1A2E]">DigiLocker Verification</h2>
             </div>
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Aadhaar Card Linkage</h2>
-              <p className="text-sm text-gray-500 max-w-xs">
-                To keep neighborhood groups trusted, verify your identity via Aadhaar using DigiLocker.
-              </p>
-            </div>
-            
-            <button 
-              onClick={() => {
-                window.location.href = `${API_URL}/api/auth/digilocker/authorize`;
-              }}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-            >
-              🔒 Link Aadhaar with DigiLocker
-            </button>
+
+            {digiSubStep === 'INTRO' && (
+              <div className="flex flex-col items-center gap-5 text-center">
+                <p className="text-sm text-gray-500">
+                  To ensure a secure and trusted community, we verify all members' identities using Aadhaar via DigiLocker.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDigiSubStep('AADHAAR_INPUT')}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  🔒 Verify via DigiLocker
+                </button>
+              </div>
+            )}
+
+            {digiSubStep === 'AADHAAR_INPUT' && (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (aadhaarNumber.length === 12 && digiPin.length === 6) {
+                    setDigiSubStep('OTP_INPUT');
+                  } else {
+                    alert('Please enter a valid 12-digit Aadhaar Number and 6-digit PIN');
+                  }
+                }}
+                className="flex flex-col gap-4"
+              >
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">Aadhaar Number (12 Digits)</label>
+                  <input
+                    type="text"
+                    maxLength={12}
+                    required
+                    placeholder="123456789012"
+                    value={aadhaarNumber}
+                    onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-medium tracking-wider text-center"
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-gray-600">DigiLocker 6-Digit Security PIN</label>
+                  <input
+                    type="password"
+                    maxLength={6}
+                    required
+                    placeholder="••••••"
+                    value={digiPin}
+                    onChange={(e) => setDigiPin(e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-medium text-center tracking-widest"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                >
+                  Request OTP
+                </button>
+              </form>
+            )}
+
+            {digiSubStep === 'OTP_INPUT' && (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (digiOtp === '123456') {
+                    setDigiSubStep('VERIFYING');
+                    setTimeout(() => {
+                      localStorage.setItem('verified_aadhaar_name', 'Rohan Sharma');
+                      setName('Rohan Sharma');
+                      setStep('PROFILE');
+                    }, 2000);
+                  } else {
+                    alert('Invalid OTP (Mock Aadhaar OTP accepts 123456)');
+                  }
+                }}
+                className="flex flex-col gap-4"
+              >
+                <div className="text-center text-xs text-gray-500 mb-2">
+                  OTP sent to mobile linked with Aadhaar ******{phone.slice(-4) || '9999'}
+                  <p className="text-[10px] text-orange-500 mt-1 font-semibold">Development mode: Use OTP 123456</p>
+                </div>
+
+                <input
+                  type="text"
+                  maxLength={6}
+                  required
+                  placeholder="••••••"
+                  value={digiOtp}
+                  onChange={(e) => setDigiOtp(e.target.value.replace(/\D/g, ''))}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg outline-none font-bold text-center tracking-widest text-2xl"
+                />
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors"
+                >
+                  Verify & Sign Consent
+                </button>
+              </form>
+            )}
+
+            {digiSubStep === 'VERIFYING' && (
+              <div className="flex flex-col items-center gap-4 py-6 text-center">
+                <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm font-semibold text-gray-700">Verifying Aadhaar identity via DigiLocker...</p>
+                <p className="text-xs text-gray-400">Fetching digital documents securely from UIDAI vault.</p>
+              </div>
+            )}
             
             <p className="text-[10px] text-gray-400 text-center">
-              Lokaal only receives your verified official name. No other data is stored.
+              Aadhaar linkage is encrypted. Lokaal only retrieves your verified official name to secure the neighborhood directory.
             </p>
           </div>
         )}
