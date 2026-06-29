@@ -147,9 +147,9 @@ export default function App() {
               </div>
 
               {/* Profile/Settings/Logout */}
-              <div className="relative">
+              <div className="relative z-50">
                 <div 
-                  className="h-9 w-9 bg-orange-50 text-orange-600 rounded-full cursor-pointer hover:bg-orange-100 hover:scale-105 transition-all flex items-center justify-center font-bold text-sm border-2 border-orange-100 shadow-sm" 
+                  className="h-9 w-9 bg-orange-50 text-orange-600 rounded-full cursor-pointer hover:bg-orange-100 hover:scale-105 transition-all flex items-center justify-center font-bold text-sm border-2 border-orange-100 shadow-sm select-none" 
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                 >
                   {(user?.name || 'US').substring(0, 2).toUpperCase()}
@@ -157,7 +157,7 @@ export default function App() {
 
                 {isProfileMenuOpen && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />
+                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setIsProfileMenuOpen(false)} />
                     <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-bold text-[#1A1A2E] truncate">{user?.name}</p>
@@ -166,6 +166,7 @@ export default function App() {
                       </div>
                       
                       <button 
+                        type="button"
                         onClick={openSettings}
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors font-semibold"
                       >
@@ -173,6 +174,7 @@ export default function App() {
                       </button>
                       
                       <button 
+                        type="button"
                         onClick={() => {
                           setIsProfileMenuOpen(false);
                           useAuthStore.getState().logout();
