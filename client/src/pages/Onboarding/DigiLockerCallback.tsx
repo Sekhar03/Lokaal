@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export default function DigiLockerCallback() {
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState('Completing Aadhaar Verification...');
@@ -16,7 +18,7 @@ export default function DigiLockerCallback() {
       }
 
       try {
-        const res = await fetch('http://localhost:3001/api/auth/digilocker/callback', {
+        const res = await fetch(`${API_URL}/api/auth/digilocker/callback`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code })
@@ -24,24 +26,17 @@ export default function DigiLockerCallback() {
         const data = await res.json();
 
         if (res.ok && data.success) {
-          // Store verified Aadhaar name in localStorage so onboarding can read it
           localStorage.setItem('verified_aadhaar_name', data.name);
           setStatus('Identity verified successfully! Redirecting back...');
           setTimeout(() => {
-            // Send back to login, which will resume at the PROFILE step
             navigate('/login');
           }, 1500);
         } else {
           setError(data.error || 'Failed to retrieve Aadhaar details.');
         }
       } catch (err) {
-        console.warn('API failed, falling back to mock DigiLocker callback:', err);
-        // Fallback for Vercel offline mode
-        localStorage.setItem('verified_aadhaar_name', 'Rohan Sharma');
-        setStatus('Identity verified successfully (Mock Mode)! Redirecting back...');
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
+        console.error('[DIGILOCKER] Verification error:', err);
+        setError('Unable to connect to Lokaal backend server to complete DigiLocker verification.');
       }
     };
 

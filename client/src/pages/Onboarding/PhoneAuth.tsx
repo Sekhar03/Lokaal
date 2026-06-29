@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
-import { useNavigate } from 'react-router-dom';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function PhoneAuth() {
   const [phone, setPhone] = useState('');
@@ -36,7 +36,7 @@ export default function PhoneAuth() {
     if (phone.length === 10) {
       setIsLoading(true);
       try {
-        await fetch('http://localhost:3001/api/auth/send-otp', {
+        await fetch(`${API_URL}/api/auth/send-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: '+91' + phone })
@@ -56,7 +56,7 @@ export default function PhoneAuth() {
     if (otp.length === 6) {
       setIsLoading(true);
       try {
-        const res = await fetch('http://localhost:3001/api/auth/verify-otp', {
+        const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone: '+91' + phone, otp })
@@ -125,7 +125,7 @@ export default function PhoneAuth() {
       setIsLoading(true);
       try {
         const token = localStorage.getItem('lokaal_token');
-        const res = await fetch('http://localhost:3001/api/auth/profile', {
+        const res = await fetch(`${API_URL}/api/auth/profile`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export default function PhoneAuth() {
       const fakeUrl = 'https://mock-storage.lokaal.app/doc_' + Date.now() + '.pdf';
       try {
         const token = localStorage.getItem('lokaal_token');
-        const res = await fetch('http://localhost:3001/api/auth/profile', {
+        const res = await fetch(`${API_URL}/api/auth/profile`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -220,7 +220,7 @@ export default function PhoneAuth() {
         
         try {
           const token = localStorage.getItem('lokaal_token');
-          const updateRes = await fetch('http://localhost:3001/api/auth/location', {
+          const updateRes = await fetch(`${API_URL}/api/auth/location`, {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
@@ -370,11 +370,7 @@ export default function PhoneAuth() {
             
             <button 
               onClick={() => {
-                if (window.location.hostname === 'localhost') {
-                  window.location.href = 'http://localhost:3001/api/auth/digilocker/authorize';
-                } else {
-                  window.location.href = `${window.location.origin}/digilocker-callback?code=mock_code_123&state=sandbox`;
-                }
+                window.location.href = `${API_URL}/api/auth/digilocker/authorize`;
               }}
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
             >

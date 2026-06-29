@@ -238,11 +238,11 @@ app.get('/api/admin/businesses', authMiddleware, adminMiddleware, async (req: an
 // --- DIGILOCKER OAUTH INTEGRATION ---
 app.get('/api/auth/digilocker/authorize', (req, res) => {
   const clientId = process.env.DIGILOCKER_CLIENT_ID;
-  const redirectUri = process.env.DIGILOCKER_REDIRECT_URI || 'http://localhost:5173/digilocker-callback';
+  const redirectUri = process.env.DIGILOCKER_REDIRECT_URI;
   
-  if (!clientId) {
-    console.warn('[DIGILOCKER] No DIGILOCKER_CLIENT_ID set. Redirecting to mock callback.');
-    return res.redirect(`${redirectUri}?code=mock_code_123&state=sandbox`);
+  if (!clientId || !redirectUri) {
+    console.error('[DIGILOCKER] DIGILOCKER_CLIENT_ID or DIGILOCKER_REDIRECT_URI is missing');
+    return res.status(400).send('DigiLocker Server Configuration Missing. Please set DIGILOCKER_CLIENT_ID and DIGILOCKER_REDIRECT_URI in your server environment.');
   }
   
   const authUrl = `https://accounts.digitallocker.gov.in/public/oauth2/1/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=lokaal_verify`;
@@ -253,17 +253,11 @@ app.post('/api/auth/digilocker/callback', async (req, res) => {
   const { code } = req.body;
   const clientId = process.env.DIGILOCKER_CLIENT_ID;
   const clientSecret = process.env.DIGILOCKER_CLIENT_SECRET;
-  const redirectUri = process.env.DIGILOCKER_REDIRECT_URI || 'http://localhost:5173/digilocker-callback';
+  const redirectUri = process.env.DIGILOCKER_REDIRECT_URI;
   
   if (!code) return res.status(400).json({ error: 'Code is required' });
-
-  if (!clientId || code.startsWith('mock_')) {
-    console.log('[DIGILOCKER] Sandbox mock verification successful.');
-    return res.json({
-      success: true,
-      name: 'Rohan Sharma',
-      isVerified: true
-    });
+  if (!clientId || !clientSecret || !redirectUri) {
+    return res.status(500).json({ error: 'DigiLocker server configuration is missing on the host environment.' });
   }
 
   try {
@@ -273,7 +267,7 @@ app.post('/api/auth/digilocker/callback', async (req, res) => {
       body: new URLSearchParams({
         code,
         client_id: clientId,
-        client_secret: clientSecret!,
+        client_secret: clientSecret,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code'
       }).toString()

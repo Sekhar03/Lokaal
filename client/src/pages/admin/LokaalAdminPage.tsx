@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 type Tab = 'PENDING' | 'USERS' | 'MODERATION' | 'SOCIETIES' | 'BUSINESSES';
 
 export default function LokaalAdminPage() {
@@ -28,7 +30,7 @@ export default function LokaalAdminPage() {
         case 'BUSINESSES': endpoint = 'businesses'; break;
       }
         
-      const res = await fetch(`http://localhost:3001/api/admin/${endpoint}`, {
+      const res = await fetch(`${API_URL}/api/admin/${endpoint}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const result = await res.json();
@@ -90,12 +92,12 @@ export default function LokaalAdminPage() {
       let method = 'DELETE';
       
       if (action === 'verify') {
-        url = `http://localhost:3001/api/admin/verify-user/${id}`;
+        url = `${API_URL}/api/admin/verify-user/${id}`;
         method = 'POST';
       } else if (action === 'deleteUser') {
-        url = `http://localhost:3001/api/admin/users/${id}`;
+        url = `${API_URL}/api/admin/users/${id}`;
       } else if (action === 'deletePost') {
-        url = `http://localhost:3001/api/admin/posts/${id}`;
+        url = `${API_URL}/api/admin/posts/${id}`;
       }
 
       const res = await fetch(url, {

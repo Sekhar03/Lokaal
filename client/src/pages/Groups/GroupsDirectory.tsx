@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 export default function GroupsDirectory() {
   const [activeTab, setActiveTab] = useState<'Users' | 'Societies'>('Users');
   const [users, setUsers] = useState<any[]>([]);
@@ -14,8 +16,8 @@ export default function GroupsDirectory() {
         const headers = { 'Authorization': `Bearer ${token}` };
         
         const [usersRes, societiesRes] = await Promise.all([
-          fetch('http://localhost:3001/api/directory/users', { headers }),
-          fetch('http://localhost:3001/api/directory/societies', { headers })
+          fetch(`${API_URL}/api/directory/users`, { headers }),
+          fetch(`${API_URL}/api/directory/societies`, { headers })
         ]);
         
         const usersData = await usersRes.json();
