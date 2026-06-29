@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useFeedStore } from '../store/feedStore';
+import { useAuthStore } from '../store/authStore';
 
 export type ModalType = 'announcement' | 'sale' | 'lost' | 'event' | 'notice' | null;
 
@@ -57,19 +59,35 @@ export default function CreateActionModals({ activeModal, onClose }: CreateActio
 function CreateAnnouncementForm({ onClose }: { onClose: () => void }) {
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState('Ward');
+  const addPost = useFeedStore((s) => s.addPost);
+  const user = useAuthStore((s) => s.user);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => onClose(), 300);
+    if (!content.trim()) return;
+
+    addPost({
+      type: 'ANNOUNCEMENT',
+      content: content + ` (Visibility: ${visibility})`,
+      author: {
+        name: user?.name || 'Local Resident',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=33'
+      },
+      location: user?.pinCode ? `Sector ${user.pinCode.slice(-1)}` : 'Neighbourhood'
+    });
+
+    setTimeout(() => onClose(), 100);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold shrink-0">L</div>
+        <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold shrink-0">
+          {user?.name ? user.name[0] : 'L'}
+        </div>
         <textarea 
           placeholder="What's happening in your neighborhood?"
-          className="w-full bg-transparent border-none outline-none resize-none min-h-[120px] text-[15px] placeholder-slate-400"
+          className="w-full bg-transparent border-none outline-none resize-none min-h-[125px] text-[15px] placeholder-slate-400 focus:ring-0"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           autoFocus
@@ -110,30 +128,78 @@ function CreateAnnouncementForm({ onClose }: { onClose: () => void }) {
 }
 
 function CreateSaleForm({ onClose }: { onClose: () => void }) {
+  const [title, setTitle] = useState('');
+  const [price, setPrice] = useState('');
   const [isFree, setIsFree] = useState(false);
+  const [condition, setCondition] = useState('Good');
+  const [category, setCategory] = useState('Furniture');
+  const addPost = useFeedStore((s) => s.addPost);
+  const user = useAuthStore((s) => s.user);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => onClose(), 300);
+    if (!title.trim()) return;
+
+    addPost({
+      type: 'FOR SALE',
+      content: `📦 Listed item: ${title} (${category}).\nCondition: ${condition}.\nPrice: ${isFree ? 'FREE' : '₹' + price}`,
+      author: {
+        name: user?.name || 'Local Seller',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=33'
+      },
+      location: user?.pinCode ? `Sector ${user.pinCode.slice(-1)}` : 'Neighbourhood',
+      image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=800' // default furniture listing image
+    });
+
+    setTimeout(() => onClose(), 100);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Item Title</label>
-        <input type="text" required placeholder="e.g. Wooden Dining Table" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder="e.g. Wooden Dining Table" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Price (₹)</label>
-          <input type="number" disabled={isFree} required={!isFree} placeholder={isFree ? "Free" : "e.g. 5000"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all disabled:opacity-50" />
+          <input 
+            type="number" 
+            disabled={isFree} 
+            required={!isFree} 
+            placeholder={isFree ? "Free" : "e.g. 5000"} 
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all disabled:opacity-50" 
+          />
           <label className="flex items-center gap-2 mt-2 text-sm text-slate-600 cursor-pointer">
-            <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} className="rounded text-orange-600 focus:ring-orange-500" />
+            <input 
+              type="checkbox" 
+              checked={isFree} 
+              onChange={(e) => {
+                setIsFree(e.target.checked);
+                if (e.target.checked) setPrice('');
+              }} 
+              className="rounded text-orange-600 focus:ring-orange-500" 
+            />
             Give for Free
           </label>
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Condition</label>
-          <select required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700 appearance-none">
+          <select 
+            required 
+            value={condition}
+            onChange={(e) => setCondition(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700"
+          >
             <option value="New">New</option>
             <option value="Like New">Like New</option>
             <option value="Good">Good</option>
@@ -143,7 +209,12 @@ function CreateSaleForm({ onClose }: { onClose: () => void }) {
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Category</label>
-        <select required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700 appearance-none">
+        <select 
+          required 
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700"
+        >
           <option value="Electronics">Electronics</option>
           <option value="Furniture">Furniture</option>
           <option value="Books">Books</option>
@@ -165,9 +236,27 @@ function CreateSaleForm({ onClose }: { onClose: () => void }) {
 
 function CreateLostFoundForm({ onClose }: { onClose: () => void }) {
   const [type, setType] = useState<'Lost' | 'Found'>('Lost');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const addPost = useFeedStore((s) => s.addPost);
+  const user = useAuthStore((s) => s.user);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => onClose(), 300);
+    if (!title.trim() || !description.trim()) return;
+
+    addPost({
+      type: 'LOST & FOUND',
+      content: `🔍 ${type.toUpperCase()}: ${title}.\nDetails: ${description}`,
+      author: {
+        name: user?.name || 'Local Resident',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=33'
+      },
+      location: location || 'Main Market'
+    });
+
+    setTimeout(() => onClose(), 100);
   };
 
   return (
@@ -178,15 +267,35 @@ function CreateLostFoundForm({ onClose }: { onClose: () => void }) {
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Title</label>
-        <input type="text" required placeholder={type === 'Lost' ? "e.g. Lost Brown Wallet" : "e.g. Found Set of Keys"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder={type === 'Lost' ? "e.g. Lost Brown Wallet" : "e.g. Found Set of Keys"} 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Description</label>
-        <textarea required placeholder="Add identifying details..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all min-h-[80px]" />
+        <textarea 
+          required 
+          placeholder="Add identifying details..." 
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all min-h-[80px]" 
+        />
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Last Seen / Found Location</label>
-        <input type="text" required placeholder="e.g. Near Central Park Gate 2" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder="e.g. Near Central Park Gate 2" 
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <button type="button" className="w-full border-2 border-dashed border-slate-200 rounded-xl py-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-orange-300 transition-colors mt-2">
         <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/></svg>
@@ -200,38 +309,100 @@ function CreateLostFoundForm({ onClose }: { onClose: () => void }) {
 }
 
 function HostEventForm({ onClose }: { onClose: () => void }) {
+  const [title, setTitle] = useState('');
+  const [venue, setVenue] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+  const [price, setPrice] = useState('');
   const [isFree, setIsFree] = useState(true);
+  const addPost = useFeedStore((s) => s.addPost);
+  const user = useAuthStore((s) => s.user);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => onClose(), 300);
+    if (!title.trim() || !venue.trim()) return;
+
+    addPost({
+      type: 'ANNOUNCEMENT', // map Event to announcements category in the feed
+      content: `🗓️ Upcoming Event: ${title}.\nDate: ${date} at ${time}.\nVenue: ${venue}.\nTicket: ${isFree ? 'FREE Entry' : '₹' + price}`,
+      author: {
+        name: user?.name || 'Event Organizer',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=33'
+      },
+      location: venue
+    });
+
+    setTimeout(() => onClose(), 100);
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Event Title</label>
-        <input type="text" required placeholder="e.g. Sunday Ward Cleanup" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder="e.g. Sunday Ward Cleanup" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Venue / Location</label>
-        <input type="text" required placeholder="e.g. Community Hall" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder="e.g. Community Hall" 
+          value={venue}
+          onChange={(e) => setVenue(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Date</label>
-          <input type="date" required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700" />
+          <input 
+            type="date" 
+            required 
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700" 
+          />
         </div>
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Time</label>
-          <input type="time" required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700" />
+          <input 
+            type="time" 
+            required 
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all text-slate-700" 
+          />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Price (₹)</label>
-          <input type="number" disabled={isFree} required={!isFree} placeholder={isFree ? "Free Event" : "e.g. 500"} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all disabled:opacity-50" />
+          <input 
+            type="number" 
+            disabled={isFree} 
+            required={!isFree} 
+            placeholder={isFree ? "Free Event" : "e.g. 500"} 
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all disabled:opacity-50" 
+          />
           <label className="flex items-center gap-2 mt-2 text-sm text-slate-600 cursor-pointer">
-            <input type="checkbox" checked={isFree} onChange={(e) => setIsFree(e.target.checked)} className="rounded text-orange-600 focus:ring-orange-500" />
+            <input 
+              type="checkbox" 
+              checked={isFree} 
+              onChange={(e) => {
+                setIsFree(e.target.checked);
+                if (e.target.checked) setPrice('');
+              }} 
+              className="rounded text-orange-600 focus:ring-orange-500" 
+            />
             Free Event
           </label>
         </div>
@@ -248,9 +419,26 @@ function HostEventForm({ onClose }: { onClose: () => void }) {
 }
 
 function CreateNoticeForm({ onClose }: { onClose: () => void }) {
+  const [title, setTitle] = useState('');
+  const [details, setDetails] = useState('');
+  const addPost = useFeedStore((s) => s.addPost);
+  const user = useAuthStore((s) => s.user);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeout(() => onClose(), 300);
+    if (!title.trim() || !details.trim()) return;
+
+    addPost({
+      type: 'NOTICE',
+      content: `📢 OFFICIAL NOTICE: ${title}.\nDetails: ${details}`,
+      author: {
+        name: user?.name || 'Society Admin',
+        avatar: user?.avatar || 'https://i.pravatar.cc/150?img=33'
+      },
+      location: 'Society Notice Board'
+    });
+
+    setTimeout(() => onClose(), 100);
   };
 
   return (
@@ -261,11 +449,24 @@ function CreateNoticeForm({ onClose }: { onClose: () => void }) {
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Notice Title</label>
-        <input type="text" required placeholder="e.g. Scheduled Power Outage" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" />
+        <input 
+          type="text" 
+          required 
+          placeholder="e.g. Scheduled Power Outage" 
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" 
+        />
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Details</label>
-        <textarea required placeholder="Enter the full notice details here..." className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all min-h-[120px]" />
+        <textarea 
+          required 
+          placeholder="Enter the full notice details here..." 
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all min-h-[120px]" 
+        />
       </div>
       <button type="button" className="w-full border-2 border-dashed border-slate-200 rounded-xl py-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 hover:border-orange-300 transition-colors mt-2">
         <svg className="w-6 h-6 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

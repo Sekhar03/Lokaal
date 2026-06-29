@@ -1,14 +1,48 @@
 import { useState } from 'react';
 
+type Event = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  venue: string;
+  rsvps: number;
+  category: string;
+  image: string;
+  free: boolean;
+  price?: number;
+};
+
 export default function EventsList() {
   const [activeTab, setActiveTab] = useState('All');
   
-  const events = [
-    { title: 'Blood Donation Camp', date: '15 Dec', time: '09:00 AM', venue: 'Community Hall, Ward 4', rsvps: 45, category: 'CIVIC', image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&q=80&w=400', free: true },
-    { title: 'Morning Yoga in the Park', date: '20 Jul', time: '06:30 AM', venue: 'Central Park', rsvps: 112, category: 'FITNESS', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400', free: true },
-    { title: 'Diwali Mela 2026', date: '25 Oct', time: '05:00 PM', venue: 'Exhibition Grounds', rsvps: 432, category: 'FESTIVAL', image: 'https://images.unsplash.com/photo-1542840410-3092f99611a3?auto=format&fit=crop&q=80&w=400', free: false, price: 50 },
-    { title: 'Kids Art Competition', date: '02 Sep', time: '10:00 AM', venue: 'Lions Club Hall', rsvps: 68, category: 'KIDS', image: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&q=80&w=400', free: false, price: 100 },
-  ];
+  // Track which event IDs the user has RSVP'd to
+  const [rsvpEventIds, setRsvpEventIds] = useState<string[]>([]);
+  
+  const [events, setEvents] = useState<Event[]>([
+    { id: '1', title: 'Blood Donation Camp', date: '15 Dec', time: '09:00 AM', venue: 'Community Hall, Ward 4', rsvps: 45, category: 'Civic', image: 'https://images.unsplash.com/photo-1615461066841-6116e61058f4?auto=format&fit=crop&q=80&w=400', free: true },
+    { id: '2', title: 'Morning Yoga in the Park', date: '20 Jul', time: '06:30 AM', venue: 'Central Park', rsvps: 112, category: 'Fitness', image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400', free: true },
+    { id: '3', title: 'Diwali Mela 2026', date: '25 Oct', time: '05:00 PM', venue: 'Exhibition Grounds', rsvps: 432, category: 'Festival', image: 'https://images.unsplash.com/photo-1542840410-3092f99611a3?auto=format&fit=crop&q=80&w=400', free: false, price: 50 },
+    { id: '4', title: 'Kids Art Competition', date: '02 Sep', time: '10:00 AM', venue: 'Lions Club Hall', rsvps: 68, category: 'Kids', image: 'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&q=80&w=400', free: false, price: 100 },
+  ]);
+
+  const toggleRsvp = (id: string) => {
+    const isJoined = rsvpEventIds.includes(id);
+    if (isJoined) {
+      setRsvpEventIds(rsvpEventIds.filter(eventId => eventId !== id));
+      setEvents(events.map(ev => ev.id === id ? { ...ev, rsvps: ev.rsvps - 1 } : ev));
+    } else {
+      setRsvpEventIds([...rsvpEventIds, id]);
+      setEvents(events.map(ev => ev.id === id ? { ...ev, rsvps: ev.rsvps + 1 } : ev));
+    }
+  };
+
+  const filteredEvents = events.filter(ev => {
+    if (activeTab === 'All') return true;
+    if (activeTab === 'Today') return ev.id === '1'; // Simulate today event
+    if (activeTab === 'This Week') return ev.id === '2'; // Simulate this week
+    return ev.category.toLowerCase() === activeTab.toLowerCase();
+  });
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 pb-24 md:pb-8">
@@ -46,54 +80,67 @@ export default function EventsList() {
         </div>
 
         {/* Event Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {events.map((ev, i) => (
-            <div key={i} className="group bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] flex flex-col">
-              <div className="h-48 w-full relative shrink-0">
-                <img src={ev.image} alt={ev.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-lg text-[11px] font-black text-slate-900 shadow-sm uppercase tracking-wider">
-                  {ev.category}
-                </div>
-                {!ev.free && (
-                  <div className="absolute top-4 right-4 bg-orange-500 px-3.5 py-1.5 rounded-lg text-[13px] font-black text-white shadow-sm">
-                    ₹{ev.price}
+        {filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredEvents.map((ev, i) => {
+              const isJoined = rsvpEventIds.includes(ev.id);
+              return (
+                <div key={ev.id} className="group bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] flex flex-col">
+                  <div className="h-48 w-full relative shrink-0">
+                    <img src={ev.image} alt={ev.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-lg text-[11px] font-black text-slate-900 shadow-sm uppercase tracking-wider">
+                      {ev.category}
+                    </div>
+                    {!ev.free && (
+                      <div className="absolute top-4 right-4 bg-orange-500 px-3.5 py-1.5 rounded-lg text-[13px] font-black text-white shadow-sm">
+                        ₹{ev.price}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="p-5 flex gap-5 relative flex-1">
-                {/* Floating Date Badge */}
-                <div className="absolute -top-10 right-6 bg-white shadow-xl rounded-2xl p-2 min-w-[64px] flex flex-col items-center justify-center border border-slate-50">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{ev.date.split(' ')[1]}</span>
-                  <span className="text-2xl font-black text-orange-600 leading-none mt-1">{ev.date.split(' ')[0]}</span>
-                </div>
-                
-                <div className="flex-1 flex flex-col">
-                  <h3 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-orange-700 transition-colors pr-14">{ev.title}</h3>
-                  <p className="text-[13px] text-slate-500 font-medium mb-5 flex items-start gap-1.5 flex-1">
-                    <svg className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>{ev.venue} <br className="hidden md:block lg:hidden"/>• {ev.time}</span>
-                  </p>
                   
-                  <div className="flex items-center justify-between mt-auto">
-                    <div className="flex -space-x-2.5">
-                      {[1,2,3].map(avatar => (
-                        <img key={avatar} src={`https://i.pravatar.cc/100?img=${avatar + i * 5}`} className="w-9 h-9 rounded-full border-2 border-white shadow-sm" alt="attendee" />
-                      ))}
-                      <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-600 shadow-sm">
-                        +{ev.rsvps}
+                  <div className="p-5 flex gap-5 relative flex-1">
+                    {/* Floating Date Badge */}
+                    <div className="absolute -top-10 right-6 bg-white shadow-xl rounded-2xl p-2 min-w-[64px] flex flex-col items-center justify-center border border-slate-50">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{ev.date.split(' ')[1]}</span>
+                      <span className="text-2xl font-black text-orange-600 leading-none mt-1">{ev.date.split(' ')[0]}</span>
+                    </div>
+                    
+                    <div className="flex-1 flex flex-col">
+                      <h3 className="font-bold text-slate-900 text-lg leading-tight mb-2 group-hover:text-orange-700 transition-colors pr-14">{ev.title}</h3>
+                      <p className="text-[13px] text-slate-500 font-medium mb-5 flex items-start gap-1.5 flex-1">
+                        <svg className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span>{ev.venue} <br className="hidden md:block lg:hidden"/>• {ev.time}</span>
+                      </p>
+                      
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex -space-x-2.5">
+                          {[1,2,3].map(avatar => (
+                            <img key={avatar} src={`https://i.pravatar.cc/100?img=${avatar + i * 5}`} className="w-9 h-9 rounded-full border-2 border-white shadow-sm" alt="attendee" />
+                          ))}
+                          <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-600 shadow-sm">
+                            +{ev.rsvps}
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => toggleRsvp(ev.id)}
+                          className={`px-6 py-2.5 text-[13px] font-bold rounded-xl transition-all shadow-md active:scale-95 ${isJoined ? 'bg-emerald-600 text-white hover:bg-emerald-700' : 'bg-slate-900 text-white hover:bg-orange-600'}`}
+                        >
+                          {isJoined ? 'Going ✓' : 'Going'}
+                        </button>
                       </div>
                     </div>
-                    <button className="px-6 py-2.5 bg-slate-900 text-white text-[13px] font-bold rounded-xl hover:bg-orange-600 transition-colors shadow-md">
-                      Going
-                    </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white border rounded-3xl p-12 text-center shadow-sm">
+            <p className="text-slate-400 font-bold text-lg mb-2">No events found</p>
+            <p className="text-slate-400 text-sm">Try choosing a different filter tab.</p>
+          </div>
+        )}
       </div>
     </div>
   );
