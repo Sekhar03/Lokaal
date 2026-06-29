@@ -89,18 +89,19 @@ enum MemberStatus {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  phone         String    @unique
-  name          String
-  avatar        String?
-  pinCode       String
-  flatNumber    String?
-  ward          String?
-  societyId     String?
-  role          Role      @default(RESIDENT)
-  fcmToken      String?
-  preferredLang String    @default("en")
-  createdAt     DateTime  @default(now())
+  id              String    @id @default(uuid())
+  phone           String    @unique
+  name            String
+  avatar          String?
+  pinCode         String
+  flatNumber      String?
+  ward            String?
+  societyId       String?
+  role            Role      @default(RESIDENT)
+  fcmToken        String?
+  preferredLang   String    @default("en")
+  verificationDoc String?
+  createdAt       DateTime  @default(now())
 
   society       Society?  @relation(fields: [societyId], references: [id])
   posts         Post[]

@@ -17,8 +17,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', version: '1.0.0-lokaal' });
 });
 
-// Mock Auth Middleware
-const authMiddleware = (req: any, res: any, next: any) => {
+const authMiddleware = async (req: any, res: any, next: any) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (token) {
+    const user = await prisma.user.findUnique({ where: { id: token } });
+    if (user) {
+      req.user = user;
+      return next();
+    }
+  }
+
+  // Fallback for development if no valid token
   req.user = {
     id: 'mock-user-123',
     phone: '+919876543210',
@@ -29,6 +39,55 @@ const authMiddleware = (req: any, res: any, next: any) => {
 };
 
 // --- API Routes (Stubs for all modules) ---
+
+// 0. Auth
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { phone } = req.body;
+  console.log(`[MOCK OTP] Sent 123456 to ${phone}`);
+  res.json({ success: true });
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+  const { phone, otp } = req.body;
+  if (otp !== '123456') {
+    return res.status(400).json({ error: 'Invalid OTP' });
+  }
+
+  let user = await prisma.user.findUnique({ where: { phone } });
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        phone,
+        name: 'New User',
+        pinCode: '',
+      }
+    });
+  }
+
+  res.json({ token: user.id, user });
+});
+
+app.put('/api/auth/profile', authMiddleware, async (req: any, res) => {
+  const { name, role, flatNumber, verificationDoc } = req.body;
+  if (!name || !role) return res.status(400).json({ error: 'Name and role required' });
+  
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { name, role, flatNumber, verificationDoc }
+  });
+  res.json({ success: true, user });
+});
+
+app.post('/api/auth/location', authMiddleware, async (req: any, res) => {
+  const { pinCode } = req.body;
+  if (!pinCode) return res.status(400).json({ error: 'pinCode required' });
+  
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: { pinCode }
+  });
+  res.json({ success: true, user });
+});
 
 // 1. Feed
 app.get('/api/feed', authMiddleware, async (req: any, res) => {
@@ -48,9 +107,24 @@ app.get('/api/events', authMiddleware, async (req: any, res) => {
   res.json(events);
 });
 
-// 3. Groups
+// 3. Groups (Directory)
 app.get('/api/groups', authMiddleware, async (req: any, res) => {
   res.json([]);
+});
+
+// Directory - Users and Societies by Pincode
+app.get('/api/directory/users', authMiddleware, async (req: any, res) => {
+  const users = await prisma.user.findMany({
+    where: { pinCode: req.user.pinCode }
+  });
+  res.json(users);
+});
+
+app.get('/api/directory/societies', authMiddleware, async (req: any, res) => {
+  const societies = await prisma.society.findMany({
+    where: { pinCode: req.user.pinCode }
+  });
+  res.json(societies);
 });
 
 // 4. Society Management
